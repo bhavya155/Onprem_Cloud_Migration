@@ -2,6 +2,8 @@ On-Premises to Cloud Data Migration
 
 Project Overview: Migrated enterprise data from an on-premises SQL Server  to Azure SQL Server using Azure Data Factory.
 
+Detalied overview :  pipeline/Analysis.md
+
 🚀 Objective
 To modernize the data platform and enable cloud-based analytics by securely and efficiently transferring large volumes of structured from on-prem to Azure.
 
