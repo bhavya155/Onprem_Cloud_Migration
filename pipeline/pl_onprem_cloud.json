@@ -1,0 +1,478 @@
+{
+	"name": "pl_onprem_cloud",
+	"properties": {
+		"activities": [
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "get metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('get metadata').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Copy Onprem to Cloud",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "old_watermark_value",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "new_watermark_value",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "select * from @{item().TABLE_NAME} where @{item().WaterMark_Column} >'@{activity('old_watermark_value').output.firstRow.oldmm}' and @{item().WaterMark_Column}<= '@{activity('new_watermark_value').output.firstRow.newmm}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"isolationLevel": "ReadCommitted",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "upsert",
+									"upsertSettings": {
+										"useTempDB": true,
+										"keys": {
+											"value": "@item().MERGE_KEY",
+											"type": "Expression"
+										}
+									},
+									"sqlWriterUseTableLock": false,
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"validateDataConsistency": true,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_onprem_server",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_cloud_sever",
+									"type": "DatasetReference",
+									"parameters": {
+										"table_name": {
+											"value": "@item().TABLE_NAME",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "old_watermark_value",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "select watermarkvalue as oldmm from watermarktable where tablename='@{item().TABLE_NAME}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"isolationLevel": "ReadCommitted",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_cloud_sever",
+									"type": "DatasetReference",
+									"parameters": {
+										"table_name": "watermarktable"
+									}
+								},
+								"firstRowOnly": true
+							}
+						},
+						{
+							"name": "Stored procedure",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Copy Onprem to Cloud",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[usp_write_watermark]",
+								"storedProcedureParameters": {
+									"LastModifiedtime": {
+										"value": {
+											"value": "@activity('new_watermark_value').output.firstRow.newmm",
+											"type": "Expression"
+										}
+									},
+									"TableName": {
+										"value": {
+											"value": "@{item().TABLE_NAME}",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_cloud_sqlserver",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "new_watermark_value",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "select max(@{item().WaterMark_Column}) as newmm from @{item().TABLE_NAME}",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"isolationLevel": "ReadCommitted",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "ds_onprem_server",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "Exception_loop",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Stored procedure",
+									"dependencyConditions": [
+										"Skipped",
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[sp_log_pipeline_run]",
+								"storedProcedureParameters": {
+									"pipeline_name": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"run_id": {
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"start_time": {
+										"value": {
+											"value": "@pipeline().TriggerTime",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									},
+									"end_time": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									},
+									"status": {
+										"value": {
+											"value": "Failed",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"error_message": {
+										"value": {
+											"value": "@concat(activity('old_watermark_value')?.Error?.Message ,'|', activity('new_watermark_value')?.Error?.Message ,'|',activity('Copy Onprem to Cloud')?.Error?.Message ,'|',activity('Stored procedure')?.Error?.Message)",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_cloud_sqlserver",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "send email",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Exception_loop",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"headers": {
+									"Content-Type": "application/json"
+								},
+								"url": "https://prod-28.southeastasia.logic.azure.com:443/workflows/7e920d2eda0f467abb302634a045de0e/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=-dN5BILRinLNuKkmQ0z3Nq_5alNE8YhzMY8IV5gXvl0",
+								"body": {
+									"value": "{\n  \"DATAFACTORYNAME\": \"@{pipeline().DataFactory}\",\n  \"PIPELINENAME\": \"@{pipeline().Pipeline}\",\n  \"RUNID\": \"@{pipeline().RunId}\",\n  \"ERROR\": \"@{activity('get metadata')?.Error?.Message}\"\n}\n",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "get metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "ds_json",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Exception",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "get metadata",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[sp_log_pipeline_run]",
+					"storedProcedureParameters": {
+						"pipeline_name": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"run_id": {
+							"value": {
+								"value": "@pipeline().RunId",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"start_time": {
+							"value": {
+								"value": "@pipeline().TriggerTime",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						},
+						"end_time": {
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						},
+						"status": {
+							"value": {
+								"value": "Failed",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"error_message": {
+							"value": {
+								"value": "@activity('get metadata')?.Error?.Message",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_cloud_sqlserver",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "send email_copy2",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Exception",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"url": "https://prod-28.southeastasia.logic.azure.com:443/workflows/7e920d2eda0f467abb302634a045de0e/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=-dN5BILRinLNuKkmQ0z3Nq_5alNE8YhzMY8IV5gXvl0",
+					"body": {
+						"value": "{\n  \"DATAFACTORYNAME\": \"@{pipeline().DataFactory}\",\n  \"PIPELINENAME\": \"@{pipeline().Pipeline}\",\n  \"RUNID\": \"@{pipeline().RunId}\",\n  \"ERROR\": \"@{activity('get metadata')?.Error?.Message}\"\n}\n",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"table_list": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"TABLE_NAME": "CATEGORIES",
+						"WaterMark_Column": "updated_at",
+						"MERGE_KEY": [
+							"category_id"
+						]
+					},
+					{
+						"TABLE_NAME": "Customers",
+						"WaterMark_Column": "updated_at",
+						"MERGE_KEY": [
+							"customer_id"
+						]
+					},
+					{
+						"TABLE_NAME": "Products",
+						"WaterMark_Column": "updated_at",
+						"MERGE_KEY": [
+							"product_id"
+						]
+					}
+				]
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-05-03T14:55:17Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
