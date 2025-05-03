@@ -1,20 +1,44 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+On-Premises to Cloud Data Migration
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+Project Overview: Migrated enterprise data from an on-premises SQL Server  to Azure SQL Server using Azure Data Factory.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+🚀 Objective
+To modernize the data platform and enable cloud-based analytics by securely and efficiently transferring large volumes of structured from on-prem to Azure.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+🖼️ Architecture
+On-Prem to Azure SQL Architecture
+![onprem_to_cloud_architecture](https://github.com/user-attachments/assets/a27a4c46-bae9-4fe9-b7be-dc880fc8e04d)
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+🛠 Tools & Technologies
+
+Azure Data Factory (ADF)
+
+Self-hosted Integration Runtime (SHIR)
+
+Azure Data Lake Storage Gen2 (ADLS)
+
+Azure SQL Database
+
+🔧 Key Implementation Steps
+
+Installed and configured SHIR to securely access on-prem SQL and file systems.
+
+Created parameterized pipelines in ADF to ingest data in parallel batches.
+
+Handled schema drift using Mapping Data Flows and dynamic columns.
+
+Automated pipeline triggers using Tumbling Window & Event-based triggers.
+
+💡 Features
+
+Supports both full and incremental loads
+
+Dynamic linked services and datasets for reusability
+
+Error handling and retry logic built into pipelines
+
+Monitoring dashboards via Azure Monitor and Log Analytics
+
+🏆 Outcome
+
+Reduced manual effort by 90%, improved data availability for analytics, and established a scalable, automated cloud pipeline for future use cases.
