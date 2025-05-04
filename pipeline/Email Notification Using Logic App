@@ -1,10 +1,13 @@
-# 🔔 ADF Pipeline Email Notification on Failure via Logic App (Gmail)
+🔔 ADF Pipeline Email Notification 
+   on Failure via Logic App (Gmail)
 
-This project demonstrates how to send an automated email alert using **Azure Logic Apps** and **Gmail** whenever an **Azure Data Factory (ADF) pipeline** fails. The notification helps in quickly identifying and acting upon failed pipelines in production environments.
+This project demonstrates how to send an automated email alert
+using **Azure Logic Apps** and **Gmail** 
+whenever an **Azure Data Factory (ADF) pipeline** fails. 
+The notification helps in quickly identifying and acting upon failed pipelines in production environments.
 
----
 
-## 🚀 Technologies Used
+🚀 Technologies Used
 
 - Azure Data Factory (ADF)
 - Azure Logic App
@@ -13,15 +16,13 @@ This project demonstrates how to send an automated email alert using **Azure Log
 - HTTP Request Trigger
 - JSON
 
----
+ 📌 Use Case
 
-## 📌 Use Case
+When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic App via **Web Activity**. 
+The Logic App receives the error details and sends a formatted email through Gmail to notify the data team.
 
-When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic App via **Web Activity**. The Logic App receives the error details and sends a formatted email through Gmail to notify the data team.
 
----
-
-## 🛠️ Architecture Overview
+🛠️ Architecture Overview
 
 1. **ADF Pipeline**:
    - Has a **Failure path** using dependency conditions.
@@ -31,11 +32,9 @@ When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic 
    - Triggered via `When an HTTP request is received`.
    - Parses failure details and sends email using Gmail connector.
 
----
+🔄 Workflow Steps
 
-## 🔄 Workflow Steps
-
-### 1. Azure Data Factory
+  1. Azure Data Factory
 
 - Created pipeline with normal activities.
 - On **failure path**, added a **Web activity** named `Send Failure Email`.
@@ -53,7 +52,7 @@ When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic 
      }
      ```
 
-### 2. Logic App
+ 2. Logic App
 
 - Trigger: `When an HTTP request is received`
 - Actions:
@@ -68,25 +67,10 @@ When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic 
         Error: @{triggerBody()?['error']}
         ```
 
----
 
-## 📸 Screenshots
 
-| ADF Pipeline with Failure Handling | Logic App Flow | Email Output |
-|-----------------------------------|----------------|--------------|
-| ![ADF Pipeline](assets/adf-pipeline.png) | ![Logic App](logic-app/logicapp-screenshot.png) | ![Email](assets/email-sample.png) |
 
----
-
-## 📂 Files Included
-
-- `pipeline.json`: (Optional) JSON export of the pipeline.
-- `logicapp-definition.json`: Logic App workflow definition.
-- `assets/`: Folder with supporting screenshots for clarity.
-
----
-
-## 📧 Sample Email
+📧 Sample Email
 
 **Subject**: ADF Pipeline Failed: DailyCustomerLoad  
 **Body**:
