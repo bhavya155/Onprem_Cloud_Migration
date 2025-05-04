@@ -52,28 +52,50 @@ The Logic App receives the error details and sends a formatted email through Gma
          }
 
      ```
-   
+   ![image](https://github.com/user-attachments/assets/9a9cd667-40ad-4bf5-bff0-cd7c607ebe8a)
+
 
  2. Logic App
 
 - Trigger: `When an HTTP request is received`
 - Actions:
    1. Parse JSON body (optional but recommended)
+           {
+    "type": "object",
+    "properties": {
+        "DATAFACTORYNAME": {
+            "type": "string"
+        },
+        "PIPELINENAME": {
+            "type": "string"
+        },
+        "RUNID": {
+            "type": "string"
+        },
+        "ERROR": {
+            "type": "string"
+        }
+    }
+}
    2. Send email via Gmail:
-      - Subject: `ADF Pipeline Failed: @{triggerBody()?['pipelineName']}`
+      - Subject: PipeLine   @{triggerBody()?['PIPELINENAME']}   DataFactory   @{triggerBody()?['DATAFACTORYNAME']}
       - Body:
-        ```
-        Pipeline Name: @{triggerBody()?['pipelineName']}
-        Run ID: @{triggerBody()?['runId']}
-        Status: @{triggerBody()?['status']}
-        Error: @{triggerBody()?['error']}
-        ```
+        Hi Team,
 
-
-
+        My Pipeline has failed with below error
+      
+        @{triggerBody()?['ERROR']}
+      
+        Thanks
+        Support Team
+    ![image](https://github.com/user-attachments/assets/6bb297d7-264c-47b5-9f95-21a76fa1a630)
+    ![image](https://github.com/user-attachments/assets/d0a8a15c-74d9-4e01-8b34-207bc6bba6fc)
 
 📧 Sample Email
 
-**Subject**: ADF Pipeline Failed: DailyCustomerLoad  
+**Subject**: PipeLine pl_onprem_cloud DataFactory df-devprojects
+
 **Body**:
+
+![image](https://github.com/user-attachments/assets/ba3157b7-61e7-469f-a2ed-4d5139ea9141)
 
