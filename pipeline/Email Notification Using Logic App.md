@@ -44,13 +44,15 @@ The Logic App receives the error details and sends a formatted email through Gma
    - Headers: `Content-Type: application/json`
    - Body:
      ```json
-     {
-       "pipelineName": "@pipeline().Pipeline",
-       "runId": "@pipeline().RunId",
-       "status": "@pipeline().Status",
-       "error": "@activity('CopyData1').Error.message"
-     }
+       {
+           "DATAFACTORYNAME": "@{pipeline().DataFactory}",
+           "PIPELINENAME": "@{pipeline().Pipeline}",
+           "RUNID": "@{pipeline().RunId}",
+           "ERROR": "@{activity('get metadata')?.Error?.Message}"
+         }
+
      ```
+   
 
  2. Logic App
 
