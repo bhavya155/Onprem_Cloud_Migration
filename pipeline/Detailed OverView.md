@@ -1,5 +1,27 @@
 On-prem to Cloud Data Migration
 
+![image](https://github.com/user-attachments/assets/62668713-2faf-4d04-b7e1-634726f37665)
+
+Control Flow Explained
+
+	Lookup - get metadata:
+	
+	  Fetches the list of tables or sources to be processed.
+	
+	Success Path → ForEach loop:
+	
+		Iterates over each table in the list.
+	
+	        On failure in any sub-step, an Exception stored procedure activity captures error and sends notification using a Web activity.
+	
+	Failure Path from Lookup:
+	
+	Triggers a fallback Stored Procedure - Exception to log failure details.
+	
+	Immediately calls a Web activity - send email notification to alert high-priority stakeholders.
+
+
+
 Steps:
 
 Note: passing parameter to dynamic
