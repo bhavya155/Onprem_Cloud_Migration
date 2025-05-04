@@ -1,1 +1,93 @@
+# 🔔 ADF Pipeline Email Notification on Failure via Logic App (Gmail)
+
+This project demonstrates how to send an automated email alert using **Azure Logic Apps** and **Gmail** whenever an **Azure Data Factory (ADF) pipeline** fails. The notification helps in quickly identifying and acting upon failed pipelines in production environments.
+
+---
+
+## 🚀 Technologies Used
+
+- Azure Data Factory (ADF)
+- Azure Logic App
+- Gmail (SMTP)
+- Web Activity
+- HTTP Request Trigger
+- JSON
+
+---
+
+## 📌 Use Case
+
+When an ADF pipeline activity fails, a **webhook call** is triggered to a Logic App via **Web Activity**. The Logic App receives the error details and sends a formatted email through Gmail to notify the data team.
+
+---
+
+## 🛠️ Architecture Overview
+
+1. **ADF Pipeline**:
+   - Has a **Failure path** using dependency conditions.
+   - Uses **Web Activity** to call the Logic App HTTP endpoint.
+
+2. **Logic App**:
+   - Triggered via `When an HTTP request is received`.
+   - Parses failure details and sends email using Gmail connector.
+
+---
+
+## 🔄 Workflow Steps
+
+### 1. Azure Data Factory
+
+- Created pipeline with normal activities.
+- On **failure path**, added a **Web activity** named `Send Failure Email`.
+- Web Activity settings:
+   - URL: Logic App HTTP POST URL
+   - Method: POST
+   - Headers: `Content-Type: application/json`
+   - Body:
+     ```json
+     {
+       "pipelineName": "@pipeline().Pipeline",
+       "runId": "@pipeline().RunId",
+       "status": "@pipeline().Status",
+       "error": "@activity('CopyData1').Error.message"
+     }
+     ```
+
+### 2. Logic App
+
+- Trigger: `When an HTTP request is received`
+- Actions:
+   1. Parse JSON body (optional but recommended)
+   2. Send email via Gmail:
+      - Subject: `ADF Pipeline Failed: @{triggerBody()?['pipelineName']}`
+      - Body:
+        ```
+        Pipeline Name: @{triggerBody()?['pipelineName']}
+        Run ID: @{triggerBody()?['runId']}
+        Status: @{triggerBody()?['status']}
+        Error: @{triggerBody()?['error']}
+        ```
+
+---
+
+## 📸 Screenshots
+
+| ADF Pipeline with Failure Handling | Logic App Flow | Email Output |
+|-----------------------------------|----------------|--------------|
+| ![ADF Pipeline](assets/adf-pipeline.png) | ![Logic App](logic-app/logicapp-screenshot.png) | ![Email](assets/email-sample.png) |
+
+---
+
+## 📂 Files Included
+
+- `pipeline.json`: (Optional) JSON export of the pipeline.
+- `logicapp-definition.json`: Logic App workflow definition.
+- `assets/`: Folder with supporting screenshots for clarity.
+
+---
+
+## 📧 Sample Email
+
+**Subject**: ADF Pipeline Failed: DailyCustomerLoad  
+**Body**:
 
